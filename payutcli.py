@@ -107,7 +107,18 @@ class Client:
         self.services = services
         self.cas_ticket = None
         self.wsgi_port = 9175
-        self.httpd = make_server('', self.wsgi_port, self.wsgi_app)
+        self.httpd = None
+        for _ in range(10000):
+            try:
+                self.httpd = make_server('', self.wsgi_port, self.wsgi_app)
+                break
+            except OSError as ex:
+                if ex.errno == 98: # address already in use
+                    self.wsgi_port += 1
+                else:
+                    raise
+        else:
+            Exception('Cannot launch wsgi server')
         self.wsgi_thread = threading.Thread(target=self.httpd.handle_request)
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
