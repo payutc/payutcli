@@ -3,6 +3,7 @@
 
 import json
 import logging
+import multiprocessing.dummy
 import requests
 import threading
 import types
@@ -101,8 +102,8 @@ class Client:
         self.session = requests.Session()
         if services is None:
             services = SERVICES
-        for service in services:
-            setattr(self, service, Service(service, self))
+        p = multiprocessing.dummy.Pool(len(services))
+        p.map(self.add_service, services)
         self.services = services
         self.cas_ticket = None
         self.wsgi_port = 9175
@@ -111,6 +112,10 @@ class Client:
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
         self.wsgi_event = threading.Event()
+
+    def add_service(self, service):
+        setattr(self, service, Service(service, self))
+        logger.info("%s is ready", service)
 
     def call(self, service__, method, **kw):
         url = '/'.join((self.location, service__, method))
