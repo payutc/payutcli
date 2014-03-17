@@ -90,7 +90,7 @@ class Service:
 class Client:
     def __init__(self, location, services=None):
         self.location = location.strip('/')
-        self.cookies = None
+        self.session = requests.Session()
         if services is None:
             services = SERVICES
         for service in services:
@@ -99,8 +99,7 @@ class Client:
 
     def call(self, service, method, **kw):
         url = '/'.join((self.location, service, method))
-        r = requests.post(url, data=kw, cookies=self.cookies)
-        self.cookies = r.cookies
+        r = self.session.post(url, data=kw)
         return r.json()
 
 
