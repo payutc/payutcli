@@ -97,8 +97,8 @@ class Client:
             setattr(self, service, Service(service, self))
         self.services = services
 
-    def call(self, service, method, **kw):
-        url = '/'.join((self.location, service, method))
+    def call(self, service__, method, **kw):
+        url = '/'.join((self.location, service__, method))
         r = self.session.post(url, data=kw)
         return r.json()
 
