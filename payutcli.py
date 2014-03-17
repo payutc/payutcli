@@ -4,10 +4,18 @@
 import json
 import logging
 import requests
+import threading
 import types
+try:
+    from urlparse import parse_qs
+except ImportError:
+    from urllib.parse import parse_qs
+import webbrowser
+from wsgiref.simple_server import make_server
 
 
 logger = logging.getLogger(__name__)
+
 
 
 def clean_default_arg(arg):
@@ -96,11 +104,45 @@ class Client:
         for service in services:
             setattr(self, service, Service(service, self))
         self.services = services
+        self.cas_ticket = None
+        self.wsgi_port = 9175
+        self.httpd = make_server('', self.wsgi_port, self.wsgi_app)
+        self.wsgi_thread = threading.Thread(target=self.httpd.handle_request)
+        self.wsgi_thread.daemon = True
+        self.wsgi_thread.start()
+        self.wsgi_event = threading.Event()
 
     def call(self, service__, method, **kw):
         url = '/'.join((self.location, service__, method))
         r = self.session.post(url, data=kw)
         return r.json()
+
+    def wsgi_app(self, environ, start_response):
+        if environ['PATH_INFO'] != '/cas':
+            start_response('404 NOT FOUND', [('Content-type', 'text/plain')])
+            return [b'']
+        parameters = parse_qs(environ['QUERY_STRING'])
+        ticket = parameters['ticket'][0]
+        self.cas_ticket = ticket
+        self.wsgi_event.set()
+        r = ('Got ticket %s, you can go back to the cli' % ticket)
+        start_response('200 OK', [('Content-type', 'text/plain')])
+        return [r.encode('utf8')]
+
+    def get_cas_ticket(self, cas_url, timeout=30):
+        self.wsgi_event.clear()
+        webbrowser.open(cas_url + "login?service=http://localhost:%s/cas" % self.wsgi_port)
+        self.wsgi_event.wait(timeout=timeout)
+        return self.cas_ticket
+
+    def loginCas(self, service=None, cas_url=None):
+        if service is None:
+            service = self.services[0]
+        service = getattr(self, service)
+        if cas_url is None:
+            cas_url = service.getCasUrl()
+        ticket = self.get_cas_ticket(cas_url)
+        return service.loginCas(ticket=ticket, service="http://localhost:%s/cas" % self.wsgi_port)
 
 
 if __name__ == '__main__':

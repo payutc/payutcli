@@ -16,3 +16,12 @@ Run
     ./payutcli -l 'http://localhost/payutc'
     >>> client.POSS3.getCasUrl()
     'http://cas.utc.fr'
+
+Login by CAS
+------------
+
+An utility funciton is provided to login by CAS, the function will open the default browser.
+
+    >>> client.loginCas()
+    # browser open
+    myutclogin
