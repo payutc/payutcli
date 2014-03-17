@@ -16,7 +16,7 @@ from wsgiref.simple_server import make_server
 
 
 logger = logging.getLogger(__name__)
-
+logger.addHandler(logging.StreamHandler())
 
 
 def clean_default_arg(arg):
@@ -156,10 +156,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Connect to payutc server.')
     parser.add_argument('-l', '--location', help='the server url', default='http://localhost/payutc/server/web')
     parser.add_argument('-v', '--verbose', help='Increase verbosity', action="store_true")
+    parser.add_argument('-vv', '--verbose_plus',help='Increase verbosity', action="store_true")
 
     args = parser.parse_args()
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
+    if args.verbose_plus:
+        logger.setLevel(logging.DEBUG)
+    elif args.verbose:
+        logger.setLevel(logging.INFO)
 
     client = Client(args.location)
     prompt()
