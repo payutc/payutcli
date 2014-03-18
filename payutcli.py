@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import json
 import logging
 import multiprocessing.dummy
 import requests
@@ -111,11 +110,13 @@ class Client:
         self.session = requests.Session()
         if services is None:
             services = SERVICES
+
         def add_service(service):
             try:
                 self.add_service(service)
             except (ValueError, PayutcError) as ex:
                 logger.exception(ex)
+
         p = multiprocessing.dummy.Pool(len(services))
         p.map(add_service, services)
         self.services = services
@@ -127,7 +128,7 @@ class Client:
                 self.httpd = make_server('', self.wsgi_port, self.wsgi_app)
                 break
             except OSError as ex:
-                if ex.errno == 98: # address already in use
+                if ex.errno == 98:  # address already in use
                     self.wsgi_port += 1
                 else:
                     raise
@@ -190,7 +191,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Connect to payutc server.')
     parser.add_argument('-l', '--location', help='the server url', default='http://localhost/payutc/server/web')
     parser.add_argument('-v', '--verbose', help='Increase verbosity', action="store_true")
-    parser.add_argument('-vv', '--verbose_plus',help='Increase verbosity', action="store_true")
+    parser.add_argument('-vv', '--verbose_plus', help='Increase verbosity', action="store_true")
     parser.add_argument('-k', '--insecure', help='deactivate ssl check', action="store_true")
 
     args = parser.parse_args()
