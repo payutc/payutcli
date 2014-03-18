@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
 
+class PayutcError(Exception):
+    def __init__(self, message, code, type):
+        super(PayutcError, self).__init__(message, code, type)
+        self.message = message
+        self.code = code
+        self.type = type
+
+
 def clean_default_arg(arg):
     if arg is False or arg is True or arg is None:
         return arg
@@ -138,7 +146,10 @@ class Client:
                 print(e)
                 print("Use -k or --insecure to skip ssl certificate check")
             raise
-        return r.json()
+        r = r.json()
+        if isinstance(r, dict) and 'error' in r:
+            raise PayutcError(**r['error'])
+        return r
 
     def wsgi_app(self, environ, start_response):
         if environ['PATH_INFO'] != '/cas':
