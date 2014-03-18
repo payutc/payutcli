@@ -97,8 +97,9 @@ class Service:
 
 
 class Client:
-    def __init__(self, location, services=None):
+    def __init__(self, location, services=None, insecure=False):
         self.location = location.strip('/')
+        self.insecure = insecure
         self.session = requests.Session()
         if services is None:
             services = SERVICES
@@ -130,7 +131,13 @@ class Client:
 
     def call(self, service__, method, **kw):
         url = '/'.join((self.location, service__, method))
-        r = self.session.post(url, data=kw)
+        try:
+            r = self.session.post(url, data=kw, verify=(not self.insecure))
+        except requests.exceptions.SSLError as e:
+            if 'certificate' in str(e):
+                print(e)
+                print("Use -k or --insecure to skip ssl certificate check")
+            raise
         return r.json()
 
     def wsgi_app(self, environ, start_response):
@@ -168,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--location', help='the server url', default='http://localhost/payutc/server/web')
     parser.add_argument('-v', '--verbose', help='Increase verbosity', action="store_true")
     parser.add_argument('-vv', '--verbose_plus',help='Increase verbosity', action="store_true")
+    parser.add_argument('-k', '--insecure', help='deactivate ssl check', action="store_true")
 
     args = parser.parse_args()
     if args.verbose_plus:
@@ -175,5 +183,5 @@ if __name__ == '__main__':
     elif args.verbose:
         logger.setLevel(logging.INFO)
 
-    client = Client(args.location)
+    client = Client(args.location, insecure=args.insecure)
     prompt()
