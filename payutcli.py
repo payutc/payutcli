@@ -111,8 +111,13 @@ class Client:
         self.session = requests.Session()
         if services is None:
             services = SERVICES
+        def add_service(service):
+            try:
+                self.add_service(service)
+            except (ValueError, PayutcError) as ex:
+                logger.exception(ex)
         p = multiprocessing.dummy.Pool(len(services))
-        p.map(self.add_service, services)
+        p.map(add_service, services)
         self.services = services
         self.cas_ticket = None
         self.wsgi_port = 9175
