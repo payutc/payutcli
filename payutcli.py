@@ -26,6 +26,27 @@ class PayutcError(Exception):
         self.type = type
 
 
+class Client(object):
+    def __init__(self, location, insecure=False):
+        self.location = location.strip('/')
+        self.insecure = insecure
+        self.session = requests.Session()
+
+    def call(self, service, method, **kw):
+        url = '/'.join((self.location, service, method))
+        try:
+            r = self.session.post(url, data=kw, verify=(not self.insecure))
+        except requests.exceptions.SSLError as e:
+            if 'certificate' in str(e):
+                print(e)
+                print("Use -k or --insecure to skip ssl certificate check")
+            raise
+        r = r.json()
+        if isinstance(r, dict) and 'error' in r:
+            raise PayutcError(**r['error'])
+        return r
+
+
 def clean_default_arg(arg):
     if arg is False or arg is True or arg is None:
         return arg
@@ -104,11 +125,10 @@ class Service:
         return d
 
 
-class Client:
+class CliClient(Client):
     def __init__(self, location, services=None, insecure=False):
-        self.location = location.strip('/')
-        self.insecure = insecure
-        self.session = requests.Session()
+        super(CliClient, self).__init__(location, insecure=insecure)
+
         if services is None:
             services = SERVICES
 
@@ -144,20 +164,6 @@ class Client:
         setattr(self, service, Service(service, self))
         logger.info("%s is ready", service)
 
-    def call(self, service__, method, **kw):
-        url = '/'.join((self.location, service__, method))
-        try:
-            r = self.session.post(url, data=kw, verify=(not self.insecure))
-        except requests.exceptions.SSLError as e:
-            if 'certificate' in str(e):
-                print(e)
-                print("Use -k or --insecure to skip ssl certificate check")
-            raise
-        r = r.json()
-        if isinstance(r, dict) and 'error' in r:
-            raise PayutcError(**r['error'])
-        return r
-
     def wsgi_app(self, environ, start_response):
         if environ['PATH_INFO'] != '/cas':
             start_response('404 NOT FOUND', [('Content-type', 'text/plain')])
@@ -186,7 +192,8 @@ class Client:
         return service.loginCas(ticket=ticket, service="http://localhost:%s/cas" % self.wsgi_port)
 
 
-if __name__ == '__main__':
+def main():
+    global client
     import argparse
 
     parser = argparse.ArgumentParser(description='Connect to payutc server.')
@@ -201,5 +208,9 @@ if __name__ == '__main__':
     elif args.verbose:
         logger.setLevel(logging.INFO)
 
-    client = Client(args.location, insecure=args.insecure)
+    client = CliClient(args.location, insecure=args.insecure)
     prompt()
+
+
+if __name__ == '__main__':
+    main()
