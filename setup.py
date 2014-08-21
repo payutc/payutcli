@@ -11,6 +11,7 @@ setup(
     author_email='thomas@recouvreux.com',
     description='Simple payutc client enhanced with an interactive shell',
     long_description=open('README.md').read(),
+    py_modules=['payutcli'],
     platforms='all',
     install_requires=install_requires,
     classifiers=[
