@@ -134,7 +134,7 @@ class Client:
                 else:
                     raise
         else:
-            Exception('Cannot launch wsgi server')
+            raise Exception('Cannot launch wsgi server')
         self.wsgi_thread = threading.Thread(target=self.httpd.handle_request)
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
