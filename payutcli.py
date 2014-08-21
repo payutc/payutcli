@@ -32,8 +32,11 @@ class Client(object):
         self.insecure = insecure
         self.session = requests.Session()
 
-    def call(self, service, method, **kw):
-        url = '/'.join((self.location, service, method))
+    def call(self, service__, method, **kw):
+        """service will be present in the kwargs, so we should call the service argument service__.
+        Try to remove it and call loginCas to see the bug :)
+        """
+        url = '/'.join((self.location, service__, method))
         try:
             r = self.session.post(url, data=kw, verify=(not self.insecure))
         except requests.exceptions.SSLError as e:
