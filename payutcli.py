@@ -66,7 +66,7 @@ SERVICES = [
     'WEBSALE',
     'WEBSALECONFIRM',
     'MESSAGES',
-    'SELFPOSS',
+    'SELFPOS',
 ]
 
 
