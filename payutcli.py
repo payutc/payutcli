@@ -27,10 +27,11 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False):
+    def __init__(self, location, insecure=False, timeout=None):
         self.location = location.strip('/')
         self.insecure = insecure
         self.session = requests.Session()
+        self.timeout = timeout
 
     def call(self, service__, method, **kw):
         """service will be present in the kwargs, so we should call the service argument service__.
@@ -38,7 +39,7 @@ class Client(object):
         """
         url = '/'.join((self.location, service__, method))
         try:
-            r = self.session.post(url, data=kw, verify=(not self.insecure))
+            r = self.session.post(url, data=kw, verify=(not self.insecure), timeout=self.timeout)
         except requests.exceptions.SSLError as e:
             if 'certificate' in str(e):
                 print(e)
