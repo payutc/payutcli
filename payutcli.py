@@ -99,6 +99,8 @@ class Service:
     def __init__(self, name, client):
         self.name = name
         self.client = client
+
+    def reload(self):
         methods = self.call('getMethods')
         for method in methods:
             self._add_method(method)
@@ -163,6 +165,10 @@ class CliClient(Client):
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
         self.wsgi_event = threading.Event()
+
+    def reload(self):
+        for service in self.services:
+            getattr(self, service).reload()
 
     def add_service(self, service):
         setattr(self, service, Service(service, self))
