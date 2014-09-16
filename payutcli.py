@@ -45,7 +45,17 @@ class Client(object):
                 print(e)
                 print("Use -k or --insecure to skip ssl certificate check")
             raise
-        r = r.json()
+        try:
+            r = r.json()
+        except Exception as e:
+            logger.exception("Error when parsing result")
+            r = {
+                'error': {
+                    'type': 'JsonDecodeError',
+                    'message': "Error during parsing : %s" % r.text,
+                    'code': -1,
+                }
+            }
         if isinstance(r, dict) and 'error' in r:
             raise PayutcError(**r['error'])
         return r
