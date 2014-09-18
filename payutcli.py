@@ -102,6 +102,7 @@ SERVICES = [
     'WEBSALECONFIRM',
     'MESSAGES',
     'SELFPOS',
+    'TRESO',
 ]
 
 
