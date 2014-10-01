@@ -97,6 +97,7 @@ SERVICES = [
     'GESARTICLE',
     'RELOAD',
     'MYACCOUNT',
+    'MYACCOUNTEXT',
     'TRANSFER',
     'WEBSALE',
     'WEBSALECONFIRM',
