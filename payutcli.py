@@ -31,7 +31,7 @@ class Client(object):
         self.location = location.strip('/')
         self.insecure = insecure
         self.session = requests.Session()
-        self.timeout = timeout
+        self.timeout = float(timeout)
 
     def call(self, service__, method, **kw):
         """service will be present in the kwargs, so we should call the service argument service__.
