@@ -25,3 +25,13 @@ An utility funciton is provided to login by CAS, the function will open the defa
     >>> client.loginCas()
     # browser open
     myutclogin
+
+Notes
+-----
+
+The following packages are required to make ssl works smoothly on python2:
+
+  ndg-httpsclient
+  pyasn1
+  pyOpenSSL
+

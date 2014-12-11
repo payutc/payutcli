@@ -28,9 +28,10 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False, timeout=None):
+    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None):
         self.location = location.strip('/')
         self.insecure = insecure
+        self.ssl_certificate = ssl_certificate
         self.session = requests.Session()
         self.timeout = None if timeout is None else float(timeout)
 
@@ -38,9 +39,15 @@ class Client(object):
         """service will be present in the kwargs, so we should call the service argument service__.
         Try to remove it and call loginCas to see the bug :)
         """
+        if self.insecure:
+            verify = False
+        elif self.ssl_certificate:
+            verify = self.ssl_certificate
+        else:
+            verify = True
         url = '/'.join((self.location, service__, method))
         try:
-            r = self.session.post(url, data=kw, verify=(not self.insecure), timeout=self.timeout)
+            r = self.session.post(url, data=kw, verify=verify, timeout=self.timeout)
         except requests.exceptions.SSLError as e:
             if 'certificate' in str(e):
                 print(e)
@@ -129,7 +136,7 @@ class Service:
         parameters = method_definition['parameters']
         parameters.sort(key=lambda p: 'default' in p)
         func_parameters = (p['name'] if 'default' not in p else '%s=%s' % (p['name'], clean_default_arg(p['default']))
-            for p in parameters)
+                           for p in parameters)
         call_parameters = ('{0}={0}'.format(p['name']) for p in parameters)
         code = 'def f(self, {func_parameters}): return self.call("{method}", {call_parameters})'
         code = code.format(
@@ -149,8 +156,8 @@ class Service:
 
 
 class CliClient(Client):
-    def __init__(self, location, services=None, insecure=False):
-        super(CliClient, self).__init__(location, insecure=insecure)
+    def __init__(self, location, services=None, insecure=False, ssl_certificate=None):
+        super(CliClient, self).__init__(location, insecure=insecure, ssl_certificate=ssl_certificate)
 
         if services is None:
             services = SERVICES
@@ -229,6 +236,7 @@ def main():
     parser.add_argument('-v', '--verbose', help='Increase verbosity', action="store_true")
     parser.add_argument('-vv', '--verbose_plus', help='Increase verbosity', action="store_true")
     parser.add_argument('-k', '--insecure', help='deactivate ssl check', action="store_true")
+    parser.add_argument('-c', '--cert', help='path to the ssl certificate')
 
     args = parser.parse_args()
     if args.verbose_plus:
@@ -236,7 +244,7 @@ def main():
     elif args.verbose:
         logger.setLevel(logging.INFO)
 
-    client = CliClient(args.location, insecure=args.insecure)
+    client = CliClient(args.location, insecure=args.insecure, ssl_certificate=args.cert)
     prompt()
 
 
