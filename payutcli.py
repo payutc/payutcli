@@ -19,11 +19,12 @@ logger.addHandler(logging.StreamHandler())
 
 
 class PayutcError(Exception):
-    def __init__(self, message, code, type):
-        super(PayutcError, self).__init__(message, code, type)
+    def __init__(self, message, code, type, data=None):
+        super(PayutcError, self).__init__(message, code, type, data)
         self.message = message
         self.code = code
         self.type = type
+        self.data = data
 
 
 class Client(object):
@@ -31,7 +32,7 @@ class Client(object):
         self.location = location.strip('/')
         self.insecure = insecure
         self.session = requests.Session()
-        self.timeout = float(timeout)
+        self.timeout = None if timeout is None else float(timeout)
 
     def call(self, service__, method, **kw):
         """service will be present in the kwargs, so we should call the service argument service__.
@@ -48,16 +49,19 @@ class Client(object):
         try:
             r = r.json()
         except Exception as e:
-            logger.exception("Error when parsing result")
+            logger.exception("Error when parsing result for %s.%s" % (service__, method))
             r = {
                 'error': {
                     'type': 'JsonDecodeError',
-                    'message': "Error during parsing : %s" % r.text,
+                    'message': "Error during parsing : %r" % r.text,
                     'code': -1,
                 }
             }
         if isinstance(r, dict) and 'error' in r:
-            raise PayutcError(**r['error'])
+            if isinstance(r['error'], dict):
+                raise PayutcError(**r['error'])
+            else:
+                raise PayutcError(r['error'], 600, 'WeirdError')
         return r
 
 
@@ -89,6 +93,7 @@ def prompt():
 
 
 SERVICES = [
+    'AUTH',
     'POSS3',
     'STATS',
     'KEY',
@@ -97,7 +102,7 @@ SERVICES = [
     'GESARTICLE',
     'RELOAD',
     'MYACCOUNT',
-    'MYACCOUNTEXT',
+    #'MYACCOUNTEXT',
     'TRANSFER',
     'WEBSALE',
     'WEBSALECONFIRM',
@@ -177,7 +182,7 @@ class CliClient(Client):
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
         self.wsgi_event = threading.Event()
-        self.reload()
+        #self.reload()
 
     def reload(self):
         for service in self.services:
