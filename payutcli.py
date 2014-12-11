@@ -102,7 +102,7 @@ SERVICES = [
     'GESARTICLE',
     'RELOAD',
     'MYACCOUNT',
-    #'MYACCOUNTEXT',
+    'MYACCOUNTEXT',
     'TRANSFER',
     'WEBSALE',
     'WEBSALECONFIRM',
@@ -182,7 +182,7 @@ class CliClient(Client):
         self.wsgi_thread.daemon = True
         self.wsgi_thread.start()
         self.wsgi_event = threading.Event()
-        #self.reload()
+        self.reload()
 
     def reload(self):
         for service in self.services:
