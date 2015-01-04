@@ -222,9 +222,9 @@ class CliClient(Client):
             service = self.services[0]
         service = getattr(self, service)
         if cas_url is None:
-            cas_url = service.getCasUrl()
+            cas_url = service.call('getCasUrl')
         ticket = self.get_cas_ticket(cas_url)
-        return service.loginCas(ticket=ticket, service="http://localhost:%s/cas" % self.wsgi_port)
+        return service.call('loginCas', ticket=ticket, service="http://localhost:%s/cas" % self.wsgi_port)
 
 
 def main():
