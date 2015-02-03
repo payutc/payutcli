@@ -28,12 +28,20 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None):
+    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False):
+        """
+        :param location: Server location
+        :param insecure: Do not check ssl certificate (default: False, meaning secure mode enabled)
+        :param timeout: Http timeout (default: no-timeout)
+        :param ssl_certificate: Path to ssl certificate
+        :send_json: Send json instead of form-urlencoded (default: False)
+        """
         self.location = location.strip('/')
         self.insecure = insecure
         self.ssl_certificate = ssl_certificate
         self.session = requests.Session()
         self.timeout = None if timeout is None else float(timeout)
+        self.send_json = send_json
 
     def call(self, service__, method, **kw):
         """service will be present in the kwargs, so we should call the service argument service__.
@@ -45,9 +53,13 @@ class Client(object):
             verify = self.ssl_certificate
         else:
             verify = True
+        if self.send_json:
+            headers = {'content-type': 'application/json'}
+        else:
+            headers = {}
         url = '/'.join((self.location, service__, method))
         try:
-            r = self.session.post(url, data=kw, verify=verify, timeout=self.timeout)
+            r = self.session.post(url, data=kw, verify=verify, timeout=self.timeout, headers=headers)
         except requests.exceptions.SSLError as e:
             if 'certificate' in str(e):
                 print(e)
@@ -91,7 +103,7 @@ def prompt():
         ## this doesn't quite work right, in that it doesn't go to the right env
         ## so we just fail.
         import code
-        import rlcompleter
+        import rlcompleter  # NOQA
         import readline
         readline.parse_and_bind("tab: complete")
         # calling this with globals ensures we can see the environment
@@ -156,8 +168,9 @@ class Service:
 
 
 class CliClient(Client):
-    def __init__(self, location, services=None, insecure=False, ssl_certificate=None):
-        super(CliClient, self).__init__(location, insecure=insecure, ssl_certificate=ssl_certificate)
+    def __init__(self, location, services=None, insecure=False, ssl_certificate=None, send_json=False):
+        super(CliClient, self).__init__(location, insecure=insecure, ssl_certificate=ssl_certificate,
+                                        send_json=send_json)
 
         if services is None:
             services = SERVICES
@@ -237,6 +250,7 @@ def main():
     parser.add_argument('-vv', '--verbose_plus', help='Increase verbosity', action="store_true")
     parser.add_argument('-k', '--insecure', help='deactivate ssl check', action="store_true")
     parser.add_argument('-c', '--cert', help='path to the ssl certificate')
+    parser.add_argument('--form-urlencoded', help='use form-urlencoded content-type', action="store_true")
 
     args = parser.parse_args()
     if args.verbose_plus:
@@ -244,7 +258,8 @@ def main():
     elif args.verbose:
         logger.setLevel(logging.INFO)
 
-    client = CliClient(args.location, insecure=args.insecure, ssl_certificate=args.cert)
+    client = CliClient(args.location, insecure=args.insecure, ssl_certificate=args.cert,
+                       send_json=not args.form_urlencoded)
     prompt()
 
 
