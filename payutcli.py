@@ -28,18 +28,22 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False, app_key=None, system_id=None):
+    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False, 
+        app_key=None, system_id=None, proxies=None):
         """
         :param location: Server location
         :param insecure: Do not check ssl certificate (default: False, meaning secure mode enabled)
         :param timeout: Http timeout (default: no-timeout)
         :param ssl_certificate: Path to ssl certificate
         :send_json: Send json instead of form-urlencoded (default: False)
+        :app_key: Send tha app_key to avoid use loginApp
+        :system_id: Add a parameter with system_id (for nemopay api)
+        :proxies: To set a proxy, put a dict like {'https': 'proxyweb.utc.fr:3128'}
         """
         self.location = location.strip('/')
         self.insecure = insecure
         self.ssl_certificate = ssl_certificate
-        self.session = requests.Session()
+        self.session = requests.Session(proxies=proxies)
         self.timeout = None if timeout is None else float(timeout)
         self.send_json = send_json
         self.app_key = app_key
