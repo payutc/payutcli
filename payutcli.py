@@ -43,7 +43,8 @@ class Client(object):
         self.location = location.strip('/')
         self.insecure = insecure
         self.ssl_certificate = ssl_certificate
-        self.session = requests.Session(proxies=proxies)
+        self.session = requests.Session()
+        self.session.proxies = proxies
         self.timeout = None if timeout is None else float(timeout)
         self.send_json = send_json
         self.app_key = app_key
