@@ -28,7 +28,7 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False):
+    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False, app_key=None, system_id=None):
         """
         :param location: Server location
         :param insecure: Do not check ssl certificate (default: False, meaning secure mode enabled)
@@ -42,6 +42,8 @@ class Client(object):
         self.session = requests.Session()
         self.timeout = None if timeout is None else float(timeout)
         self.send_json = send_json
+        self.app_key = app_key
+        self.system_id = system_id
 
     def call(self, service__, method, **kw):
         """service will be present in the kwargs, so we should call the service argument service__.
@@ -58,6 +60,10 @@ class Client(object):
         else:
             headers = {}
         url = '/'.join((self.location, service__, method))
+        if self.app_key:
+            kw['app_key'] = self.app_key
+        if self.system_id:
+            kw['system_id'] = self.system_id
         try:
             r = self.session.post(url, data=kw, verify=verify, timeout=self.timeout, headers=headers)
         except requests.exceptions.SSLError as e:
