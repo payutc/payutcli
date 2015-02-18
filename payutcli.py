@@ -38,7 +38,7 @@ class Client(object):
         :send_json: Send json instead of form-urlencoded (default: False)
         :app_key: Send tha app_key to avoid use loginApp
         :system_id: Add a parameter with system_id (for nemopay api)
-        :proxies: To set a proxy, put a dict like {'https': 'proxyweb.utc.fr:3128'}
+        :proxies: To set a proxy, put a dict like {'https': 'foo.bar:3128'}
         """
         self.location = location.strip('/')
         self.insecure = insecure
