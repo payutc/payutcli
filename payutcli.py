@@ -1,21 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import json
 import logging
 import multiprocessing.dummy
 import requests
 import threading
 import types
 try:
-    from urlparse import parse_qs
+    from urlparse import parse_qs, parse_qsl, urlsplit, urlunsplit, urlencoded
 except ImportError:
-    from urllib.parse import parse_qs
+    from urllib.parse import parse_qs, parse_qsl, urlsplit, urlunsplit, urlencode
 import webbrowser
 from wsgiref.simple_server import make_server
 
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+
+
+def append_query_parameter(url, name, value):
+    """Add the query string parameter 'name=value' to the given url.
+
+    Ex:
+        - ('/return', 'id', 42) -> '/return?id=42'
+        - ('/return?foo=bar', 'id', 42) -> '/return?foo=bar&id=42'
+    """
+    scheme, netloc, path, query_string, fragment = urlsplit(url)
+    query_params = parse_qsl(query_string)
+    query_params.append((name, value))
+    new_query_string = urlencode(query_params, doseq=True)
+    return urlunsplit((scheme, netloc, path, new_query_string, fragment))
 
 
 class PayutcError(Exception):
@@ -54,23 +68,30 @@ class Client(object):
         """service will be present in the kwargs, so we should call the service argument service__.
         Try to remove it and call loginCas to see the bug :)
         """
+        url = '/'.join((self.location, service__, method))
+
         if self.insecure:
             verify = False
         elif self.ssl_certificate:
             verify = self.ssl_certificate
         else:
             verify = True
+
+        if self.app_key:
+            url = append_query_parameter(url, 'app_key', self.app_key)
+
+        if self.system_id:
+            url = append_query_parameter(url, 'system_id', self.system_id)
+
         if self.send_json:
             headers = {'content-type': 'application/json'}
+            data = json.dumps(kw)
         else:
             headers = {}
-        url = '/'.join((self.location, service__, method))
-        if self.app_key:
-            kw['app_key'] = self.app_key
-        if self.system_id:
-            kw['system_id'] = self.system_id
+            data = kw
+
         try:
-            r = self.session.post(url, data=kw, verify=verify, timeout=self.timeout, headers=headers)
+            r = self.session.post(url, data=data, verify=verify, timeout=self.timeout, headers=headers)
         except requests.exceptions.SSLError as e:
             if 'certificate' in str(e):
                 print(e)
@@ -179,9 +200,10 @@ class Service:
 
 
 class CliClient(Client):
-    def __init__(self, location, services=None, insecure=False, ssl_certificate=None, send_json=False):
+    def __init__(self, location, services=None, insecure=False, ssl_certificate=None, send_json=False,
+                 system_id=None, app_key=None):
         super(CliClient, self).__init__(location, insecure=insecure, ssl_certificate=ssl_certificate,
-                                        send_json=send_json)
+                                        send_json=send_json, system_id=system_id, app_key=app_key)
 
         if services is None:
             services = SERVICES
@@ -203,7 +225,7 @@ class CliClient(Client):
                 self.httpd = make_server('', self.wsgi_port, self.wsgi_app)
                 break
             except OSError as ex:
-                if ex.errno == 98:  # address already in use
+                if ex.errno in (48, 98):  # address already in use
                     self.wsgi_port += 1
                 else:
                     raise
@@ -261,6 +283,8 @@ def main():
     parser.add_argument('-vv', '--verbose_plus', help='Increase verbosity', action="store_true")
     parser.add_argument('-k', '--insecure', help='deactivate ssl check', action="store_true")
     parser.add_argument('-c', '--cert', help='path to the ssl certificate')
+    parser.add_argument('-S', '--system-id', help='System id')
+    parser.add_argument('-A', '--app-key', help='Application key')
     parser.add_argument('--form-urlencoded', help='use form-urlencoded content-type', action="store_true")
 
     args = parser.parse_args()
@@ -270,7 +294,8 @@ def main():
         logger.setLevel(logging.INFO)
 
     client = CliClient(args.location, insecure=args.insecure, ssl_certificate=args.cert,
-                       send_json=not args.form_urlencoded)
+                       send_json=not args.form_urlencoded, system_id=args.system_id,
+                       app_key=args.app_key)
     prompt()
 
 
