@@ -7,9 +7,11 @@ import requests
 import threading
 import types
 try:
-    from urlparse import parse_qs, parse_qsl, urlsplit, urlunsplit, urlencoded
+    import urlparse
+    from urllib import urlencode
 except ImportError:
-    from urllib.parse import parse_qs, parse_qsl, urlsplit, urlunsplit, urlencode
+    import urllib.parse as urlparse
+    from urllib.parse import urlencode
 import webbrowser
 from wsgiref.simple_server import make_server
 
@@ -25,11 +27,11 @@ def append_query_parameter(url, name, value):
         - ('/return', 'id', 42) -> '/return?id=42'
         - ('/return?foo=bar', 'id', 42) -> '/return?foo=bar&id=42'
     """
-    scheme, netloc, path, query_string, fragment = urlsplit(url)
-    query_params = parse_qsl(query_string)
+    scheme, netloc, path, query_string, fragment = urlparse.urlsplit(url)
+    query_params = urlparse.parse_qsl(query_string)
     query_params.append((name, value))
     new_query_string = urlencode(query_params, doseq=True)
-    return urlunsplit((scheme, netloc, path, new_query_string, fragment))
+    return urlparse.urlunsplit((scheme, netloc, path, new_query_string, fragment))
 
 
 class PayutcError(Exception):
@@ -249,7 +251,7 @@ class CliClient(Client):
         if environ['PATH_INFO'] != '/cas':
             start_response('404 NOT FOUND', [('Content-type', 'text/plain')])
             return [b'']
-        parameters = parse_qs(environ['QUERY_STRING'])
+        parameters = urlparse.parse_qs(environ['QUERY_STRING'])
         ticket = parameters['ticket'][0]
         self.cas_ticket = ticket
         self.wsgi_event.set()
