@@ -44,7 +44,7 @@ class PayutcError(Exception):
 
 
 class Client(object):
-    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=False, 
+    def __init__(self, location, insecure=False, timeout=None, ssl_certificate=None, send_json=True,
         app_key=None, system_id=None, proxies=None):
         """
         :param location: Server location
